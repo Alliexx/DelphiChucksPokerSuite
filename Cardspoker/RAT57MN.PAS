@@ -1,0 +1,763 @@
+unit Rat57mn;
+
+(*
+ * unit Rat57mn for Delphi 4 through 2005 (32-Bit Native)
+ * Copyright 2005, Charles A. Appel Jr.
+ *
+ * This unit permits the user to generate and evaluate 7-Card poker hands
+ *   using the 5-Card poker library.
+ *   It displays the hands, their names, and ratings in a list box. This
+ *   unit is used to test and validate the Poker Suite. Specifically, it
+ *   tests the 5-Card poker hand and demonstrates how to use the 5-Card
+ *   library with games like Seven Card Stud.
+ *
+ * Since the 5-Card library only supports hands of 5 cards, we will use
+ *   the caa7Card Helper library.
+ *)
+
+interface
+
+uses
+  SysUtils, Windows, Messages, Classes, Graphics, Controls,
+  Forms, Dialogs, caaPSCrd, caaPSDck, caaPS5CH, StdCtrls, caa7Card;
+
+type
+  TformMain = class(TForm)
+    lbxDisplay: TListBox;
+    Edit1: TEdit;
+    Edit3: TEdit;
+    Label1: TLabel;
+    Label2: TLabel;
+    Edit5: TEdit;
+    Edit6: TEdit;
+    Label3: TLabel;
+    Edit9: TEdit;
+    Label6: TLabel;
+    Edit10: TEdit;
+    Edit11: TEdit;
+    Label7: TLabel;
+    Label8: TLabel;
+    ListBox1: TListBox;
+    ListBox2: TListBox;
+    Edit2: TEdit;
+    Edit4: TEdit;
+    Edit12: TEdit;
+    Edit13: TEdit;
+    Edit14: TEdit;
+    GroupBox1: TGroupBox;
+    CheckBox1: TCheckBox;
+    Edit7: TEdit;
+    Label4: TLabel;
+    Button1: TButton;
+    Label9: TLabel;
+    Edit8: TEdit;
+    Label5: TLabel;
+    GroupBox2: TGroupBox;
+    btnRandom: TButton;
+    Button3: TButton;
+    Button2: TButton;
+    Edit15: TEdit;
+    Label10: TLabel;
+    Button4: TButton;
+    Edit16: TEdit;
+    Label11: TLabel;
+    Edit17: TEdit;
+    Label12: TLabel;
+    Edit18: TEdit;
+    Label13: TLabel;
+    Edit19: TEdit;
+    Label14: TLabel;
+    Button5: TButton;
+    Button6: TButton;
+    Button7: TButton;
+    Button8: TButton;
+    Button9: TButton;
+    Button10: TButton;
+    Button11: TButton;
+    Button12: TButton;
+    Button13: TButton;
+    Button14: TButton;
+    Button15: TButton;
+    Button16: TButton;
+    Button17: TButton;
+    Edit20: TEdit;
+    Label15: TLabel;
+    Edit21: TEdit;
+    Label16: TLabel;
+    Button18: TButton;
+    Button19: TButton;
+    Edit22: TEdit;
+    Label17: TLabel;
+    Edit23: TEdit;
+    Label18: TLabel;
+    Edit24: TEdit;
+    Edit25: TEdit;
+    Label19: TLabel;
+    Label20: TLabel;
+    Label21: TLabel;
+    Label22: TLabel;
+    Label23: TLabel;
+    Label24: TLabel;
+    Label25: TLabel;
+    Edit26: TEdit;
+    Label26: TLabel;
+    Edit27: TEdit;
+    Edit28: TEdit;
+    Label27: TLabel;
+    Label28: TLabel;
+    procedure btnRandomClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
+    procedure delay(msec:integer; Sender: TObject);
+    procedure percent(Sender: TObject);
+    procedure Button3Click(Sender: TObject);
+    procedure Button4Click(Sender: TObject);
+    procedure Button5Click(Sender: TObject);
+    procedure Button6Click(Sender: TObject);
+    procedure Button9Click(Sender: TObject);
+    procedure Button16Click(Sender: TObject);
+    procedure Button17Click(Sender: TObject);
+    procedure Button7Click(Sender: TObject);
+    procedure Button8Click(Sender: TObject);
+    procedure Button18Click(Sender: TObject);
+    procedure Button19Click(Sender: TObject);
+  private
+    { Private declarations }
+    procedure showHand(Hand: Tcaa7CardHand);
+  public
+    { Public declarations }
+  end;
+
+var
+  formMain: TformMain;
+  stake,totcrdtsin,totcrdtspld,totcrdtswin,dealerwin,acoins,crdts,club,win,bet,winpl,windl,aantalk,msec,aantalsp:integer;
+  gperc,mperc,acoineur,perc,percpl,percnwin: double;
+  hand1, hand2, hand3, hand4 : Tcaa5CardHandRating;
+
+implementation
+
+{$R *.DFM}
+
+procedure TformMain.delay(msec:integer; Sender: TObject);    { havent got a clue, but it does do delays well }
+var       firsttickcount:longint;
+begin
+     firsttickcount:=gettickcount;
+     repeat
+           Application.processMessages;
+     until ((gettickcount-firsttickcount)>=longint(msec));
+end;
+
+var
+  Deck: TcaaCardDeck;
+
+{ Helper Functions ----------------------------------------------------------- }
+
+{ function ratingToString
+  Expects: A valid five card hand rating.
+  Returns: The rating converted to a string in a more easily read format.
+  Notes:   The hexadecimal display was confusing.
+           The format is R-XXXXX, where:
+              R = the hand rank value.
+              - = a hyphen.
+              X = the card rank.
+            Card Ranks are:
+              A = Ace     2 = Two    3 = Three    4 = Four
+              5 = Five    6 = Six    7 = Seven    8 = Eight
+              9 = Nine    T = Ten    J = Jack     Q = Queen
+              K = King
+            Hand Rank Values are:
+              0 = No Pair    1 = One Pair   2 = Two Pair    3 = 3 of a Kind
+              4 = Straight   5 = Flush      6 = Full House  7 = 4 of a Kind
+              8 = Str Flush  9 = Royal      A = 5 of a Kind }
+function ratingToString( rating: Tcaa5CardHandRating ): string;
+var
+  fromStr,
+  toStr: string;
+  charPos,
+  sLen: integer;
+begin
+  { convert rating to hexadecimal string }
+  fromStr := UpperCase(IntToHex( rating, 6 ));
+
+  { get length of string}
+  sLen := Length( fromStr );
+
+  { initialize return value  }
+  toStr := fromStr[1] + '-';
+
+  { convert remaining characters }
+  for charPos := 2 to sLen do
+  begin
+    case fromStr[charPos] of
+      '1' : toStr := toStr + 'A';
+      '2' : toStr := toStr + '2';
+      '3' : toStr := toStr + '3';
+      '4' : toStr := toStr + '4';
+      '5' : toStr := toStr + '5';
+      '6' : toStr := toStr + '6';
+      '7' : toStr := toStr + '7';
+      '8' : toStr := toStr + '8';
+      '9' : toStr := toStr + '9';
+      'A' : toStr := toStr + 'T';
+      'B' : toStr := toStr + 'J';
+      'C' : toStr := toStr + 'Q';
+      'D' : toStr := toStr + 'K';
+      'E' : toStr := toStr + 'A';
+    end; { case }
+  end; { for }
+  result := toStr;
+end; { function ratingToString }
+
+{ TformMain ------------------------------------------------------------------ }
+
+{ procedure TformMain.showHand
+  Does:  Displays the High Rating and High Hand Name.
+         Displays the Low Rating and Low Hand Name.
+         Displays the Names of the Seven Cards. }
+
+
+procedure TformMain.showHand( Hand: Tcaa7CardHand );
+var
+  tmpStr: string;
+begin
+  { set the high and low ratings }
+  caa7CardSetHighValue( Hand );
+  caa7CardSetLowValue( Hand );
+
+  { display high name and rating
+    first, set the evaluation hand rating to the high rating.
+    display that high rating.
+    display the high hand name.
+      To do this, we set the rating equal to the high rating and
+      pass the evaluation hand to the GetHandName routine.
+      hand names are derived from the rating, not from the card array. }
+  tmpStr := 'High: ' +
+    ratingToString( Hand.HighRating ) +
+    '  (Hex:' +
+    IntToHex( Hand.HighRating, 6 ) +
+    ')  ' +
+    caa7CardGetHighHandName( Hand );
+  lbxDisplay.Items.Add( tmpStr );
+  edit3.text:=ratingToString( Hand.HighRating );
+
+  hand1:=(hand.highrating);
+
+
+  { 2 base cards. }
+  tmpStr := caaGetCardName( Hand.Cards[1] );
+  listbox1.Items.add( ' 1) ' + tmpStr );
+  tmpStr := caaGetCardName( Hand.Cards[2] );
+  listbox1.Items.add( ' 2) ' + tmpStr );
+  edit14.text:=ratingToString( Hand.LowRating );
+
+  hand3:=(hand.lowrating);
+
+  tmpStr := 'low: ' +
+    ratingToString( Hand.lowRating ) +
+    '  (Hex:' +
+    IntToHex( Hand.lowRating, 6 ) +
+    ')  ' +
+    caa7CardGetlowHandName( Hand );
+  lbxDisplay.Items.Add( tmpStr );
+
+  { display the names of the cards in order }
+  tmpStr := caaGetCardName( Hand.Cards[1] );
+  lbxDisplay.Items.Add( ' 1) ' + tmpStr );
+  tmpStr := caaGetCardName( Hand.Cards[2] );
+  lbxDisplay.Items.Add( ' 2) ' + tmpStr );
+  tmpStr := caaGetCardName( Hand.Cards[3] );
+  lbxDisplay.Items.Add( ' 3)     ' + tmpStr );
+  tmpStr := caaGetCardName( Hand.Cards[4] );
+  lbxDisplay.Items.Add( ' 4)     ' + tmpStr );
+  tmpStr := caaGetCardName( Hand.Cards[5] );
+  lbxDisplay.Items.Add( ' 5)     ' + tmpStr );
+  tmpStr := caaGetCardName( Hand.Cards[6] );
+  lbxDisplay.Items.Add( ' 6)     ' + tmpStr );
+  tmpStr := caaGetCardName( Hand.Cards[7] );
+  lbxDisplay.Items.Add( ' 7)     ' + tmpStr );
+  lbxDisplay.Items.Add( '' );
+end;
+
+
+
+
+
+procedure TformMain.btnRandomClick(Sender: TObject);
+var
+
+  Hand: Tcaa7CardHand;
+  r,t,count, del: integer;
+  cardPos1,
+  cardPos2,
+  cardPos3,
+  cardPos4,
+  cardPos5,
+  cardPos6,
+  cardPos7 : TcaaDeckRange;
+  crdpos1a,crdpos2a: TcaaDeckRange;
+begin
+  val(edit28.Text, r, t);
+  del:=r;      {**********vertraging************}
+
+    caaBuildCardDeck(deck);
+    randomize;
+
+    edit4.Color:=clgreen;     { player color }
+    edit12.Color:=clgreen;    { dealer color }
+    edit2.Color:=clgreen;  { win indicator to green  }
+    edit15.color:=clgreen;
+    aantalsp:=aantalsp+1;
+    edit8.Text:=''+inttostr(aantalsp);
+    lbxDisplay.Clear;
+    listbox1.Clear;
+    listbox2.Clear;
+    edit1.Text:='';
+    edit3.Text:='';
+    edit13.Text:='';
+    edit14.Text:='';
+
+    Button17Click(Sender);    { update bet ingame }
+    Button8Click(Sender);
+    delay(del,sender);
+
+    cardPos1 := Random( caaStdDeckSize );
+    crdpos1a:=cardpos1;
+
+    { second card must be different from first card }
+    repeat
+      cardPos2 := Random( caaStdDeckSize );
+    until cardPos2 <> cardPos1;
+    crdpos2a:=cardpos2;
+
+    Button7Click(Sender);    { update bet ingame }
+    Button8Click(Sender);
+    delay(del,sender);
+
+    { third card must be different from first two }
+    repeat
+      cardPos3 := Random( caaStdDeckSize );
+    until (cardPos3 <> cardPos1) and (cardPos3 <> cardPos2);
+
+    { fourth card must be different from first three }
+    repeat
+      cardPos4 := Random( caaStdDeckSize );
+    until (cardPos4 <> cardPos1) and
+          (cardPos4 <> cardPos2) and
+          (cardPos4 <> cardPos3);
+
+    { the fifth card must be different than the others }
+    repeat
+      cardPos5 := Random( caaStdDeckSize );
+    until (cardPos5 <> cardPos1) and
+          (cardPos5 <> cardPos2) and
+          (cardPos5 <> cardPos3) and
+          (cardPos5 <> cardPos4);
+
+    Button7Click(Sender);    { update bet ingame }
+    Button8Click(Sender);
+    delay(del,sender);
+
+    { the sixth card must be different than the others }
+    repeat
+      cardPos6 := Random( caaStdDeckSize );
+    until (cardPos6 <> cardPos1) and
+          (cardPos6 <> cardPos2) and
+          (cardPos6 <> cardPos3) and
+          (cardPos6 <> cardPos4) and
+          (cardPos6 <> cardPos5);
+
+    Button7Click(Sender);    { update bet ingame }
+    Button8Click(Sender);
+    delay(del,sender);
+
+    { the seventh card must be different than the others }
+    repeat
+      cardPos7 := Random( caaStdDeckSize );
+    until (cardPos7 <> cardPos1) and
+          (cardPos7 <> cardPos2) and
+          (cardPos7 <> cardPos3) and
+          (cardPos7 <> cardPos4) and
+          (cardPos7 <> cardPos5) and
+          (cardPos7 <> cardPos6);
+
+    Hand.Cards[1] := Deck[cardPos1];
+    Hand.Cards[2] := Deck[cardPos2];
+    Hand.Cards[3] := Deck[cardPos3];
+    Hand.Cards[4] := Deck[cardPos4];
+    Hand.Cards[5] := Deck[cardPos5];
+    Hand.Cards[6] := Deck[cardPos6];
+    Hand.Cards[7] := Deck[cardPos7];
+
+    lbxDisplay.Items.Add( 'PLAYER' );
+    showHand( Hand );
+    
+    listbox2.Items:=listbox1.Items;
+    listbox1.Clear;
+    edit1.Text:=edit3.Text;
+    edit13.Text:=edit14.Text;
+
+    hand2:=hand1;
+    hand4:=hand3;
+
+    repeat
+      cardPos1 := Random( caaStdDeckSize );
+    until (cardpos1 <> crdpos1a) and
+          (cardpos1 <> crdpos2a) and
+          (cardpos1 <> cardpos3) and
+          (cardpos1 <> cardpos4) and
+          (cardpos1 <> cardpos5) and
+          (cardpos1 <> cardpos6) and
+          (cardpos1 <> cardpos7);
+    { second card must be different from first card }
+    repeat
+      cardPos2 := Random( caaStdDeckSize );
+    until (cardPos2 <> cardPos1) and
+          (cardpos2 <> crdpos2a) and
+          (cardpos2 <> crdpos1a) and
+          (cardpos2 <> cardpos3) and
+          (cardpos2 <> cardpos4) and
+          (cardpos2 <> cardpos5) and
+          (cardpos2 <> cardpos6) and
+          (cardpos2 <> cardpos7);
+
+    { third card must be different from first two }
+
+      cardPos3 := cardpos3;
+      cardpos4 := cardpos4;
+      cardpos5 := cardpos5;
+      cardpos6 := cardpos6;
+      cardpos7 := cardpos7;
+
+
+    Hand.Cards[1] := Deck[cardPos1];
+    Hand.Cards[2] := Deck[cardPos2];
+    Hand.Cards[3] := Deck[cardPos3];
+    Hand.Cards[4] := Deck[cardPos4];
+    Hand.Cards[5] := Deck[cardPos5];
+    Hand.Cards[6] := Deck[cardPos6];
+    Hand.Cards[7] := Deck[cardPos7];
+
+    lbxDisplay.Items.Add( 'DEALER' );
+    showHand( Hand );
+
+    if hand2 > hand1 then
+      begin
+        winpl:=winpl+1;              { high rating }
+        delay(del,sender);
+        Button18Click(Sender);
+        delay(del,sender);
+        Button6Click(Sender);     { win to club update }
+      end;
+    if hand2 < hand1 then
+      begin
+        windl:=windl+1;
+        delay(del,sender);
+        Button19Click(Sender);
+      end;
+
+    if hand2 = hand1 then                               { low rating }
+      begin
+        edit2.Color:=clred;
+        if hand4 > hand3 then
+          begin
+          edit4.Color:=clred;
+          winpl:=winpl+1;
+          delay(del,sender);
+          Button18Click(Sender);
+          delay(del,sender);
+          Button6Click(Sender);     { win to club update }
+          end
+          else
+          if hand4 < hand3 then
+          begin
+          edit12.Color:=clred;
+          windl:=windl+1;
+          delay(del,sender);
+          Button19Click(Sender);
+          end
+          else
+          if hand4 = hand3 then
+            begin
+            edit15.color:=clred;
+            delay(del,sender);
+            Button19Click(Sender);
+            end;
+
+      end;
+
+               { tie pays to dealer }
+
+    edit5.Text:=''+inttostr(winpl);
+    edit6.Text:=''+inttostr(windl);
+    percent(Sender);
+    gperc:=(totcrdtswin/totcrdtspld)*100;
+    edit26.Text:=floattostr(gperc);
+    mperc:=((club+crdts)/totcrdtsin)*100;
+    edit27.Text:=floattostr(mperc);
+end;
+
+
+
+{ procedure TformMain.FormShow
+  Does: Initializes the global Deck variable.
+        Calls Randomize. }
+procedure TformMain.FormShow(Sender: TObject);
+begin
+  caaBuildCardDeck( Deck );
+  Randomize;
+end;
+
+
+
+procedure TformMain.FormCreate(Sender: TObject);
+begin
+  gperc:=0;
+  mperc:=0;
+  stake:=0;
+  totcrdtsin:=0;
+  totcrdtspld:=0;
+  totcrdtswin:=0;
+  dealerwin:=0;
+  acoineur:=0;
+  acoins:=0;
+  crdts:=0;
+  club:=0;
+  win:=0;
+  bet:=0;
+  perc:=0;
+  percpl:=0;
+  percnwin:=0;
+  winpl:=0;
+  windl:=0;
+  aantalk:=0;
+  aantalsp:=0;
+  lbxDisplay.Clear;
+  listbox1.Clear;
+  listbox2.Clear;
+  checkbox1.Checked:=false;
+  edit1.Text:='';         { teller begint bij nul }
+  edit2.Color:=clgreen;
+  edit4.Color:=clgreen;     { player color }
+  edit12.Color:=clgreen;    { dealer color }
+  edit15.color:=clgreen;
+  edit13.Text:='';
+  edit3.Text:='';         { teller begint bij nul }
+  edit14.Text:='';
+  edit5.Text:='0';         { teller begint bij nul }
+  edit6.Text:='0';         { teller begint bij nul }
+  edit7.Text:='60';         { aantal keren bij nul }
+  edit8.Text:='0';          { aantal games }
+  edit9.Text:='0';          { percentage dealer }
+  edit10.Text:='0';         { percentage player }
+  edit11.Text:='0';         { percentage nobody win }
+  edit16.Text:='0';         { credits start 0 }
+  edit17.Text:='0';         { club start 0 }
+  edit18.Text:='0';         { win start 0 }
+  edit19.Text:='0';         { bets start 0 }
+  edit20.Text:='0';         { aantalcoins to 0 }
+  edit21.Text:='0';         { aantalcoins in euro to 0 }
+  edit22.Text:='0';         { dealerwin to 0 }
+  edit23.Text:='0';         { total credits in to 0 }
+  edit24.Text:='0';         { total credits played to 0 }
+  edit25.Text:='0';         { total credits win to 0 }
+  edit26.Text:='0';         { geme percentage to 0 }
+  edit27.Text:='0';         { money percentage to 0 }
+  edit28.Text:='500';         { runtime interval 500 }
+end;
+
+procedure TformMain.Button1Click(Sender: TObject);
+var
+  i,code:integer;
+begin
+  Val(Edit7.Text, I, Code);
+  while aantalk < i do
+    begin
+      btnRandomClick(Sender);
+      percent(Sender);
+      delay(0,sender);
+      aantalk:=aantalk+1;
+      if hand2 = hand1 then
+        if checkbox1.Checked = true then exit;;
+    end;
+  aantalk:=0;
+end;
+
+procedure TformMain.percent(Sender: TObject);
+var
+  i,j,code,codej:integer;
+begin
+  Val(Edit6.Text, I, Code);
+  Val(Edit8.Text, j, Codej);
+  perc:=(i/j)*100;
+  edit9.Text:=''+floattostr(perc);     { percentage dealer }
+  Val(Edit5.Text, I, Code);
+  Val(Edit8.Text, j, Codej);
+  percpl:=(i/j)*100;
+  edit10.Text:=''+floattostr(percpl);    { percentage player }
+  percnwin:=100-(perc+percpl);
+  if percnwin <= 0 then percnwin:=0;
+  edit11.Text:=''+floattostr(percnwin);    { percentage player }
+end;
+
+procedure TformMain.Button3Click(Sender: TObject);
+begin
+
+  FormCreate(Sender);
+  btnRandomClick(Sender);
+
+end;
+
+
+
+
+procedure TformMain.Button4Click(Sender: TObject);
+begin
+  crdts:=crdts + 10;
+  edit16.Text:=inttostr(crdts);
+  acoins:=acoins+1;
+  edit20.Text:=inttostr(acoins);
+  acoineur:=acoins * 2.00;
+  edit21.Text:=floattostr(acoineur);
+  totcrdtsin:=totcrdtsin + 10;
+  edit23.Text:=inttostr(totcrdtsin);         { total credits in update }
+end;
+
+procedure TformMain.Button5Click(Sender: TObject);
+begin
+  if club < 20 then
+    begin
+      crdts:=crdts+club;
+      club:=club-club;
+      edit16.text:=inttostr(crdts);
+      edit17.Text:=inttostr(club);
+    end;
+  if club >= 20 then
+    begin
+      crdts:=crdts+20;
+      club:=club-20;
+      edit16.text:=inttostr(crdts);
+      edit17.Text:=inttostr(club);
+    end;
+end;
+
+procedure TformMain.Button6Click(Sender: TObject);
+begin
+  club:=club+win;
+  totcrdtswin:=totcrdtswin+win;
+  win:=win-win;
+  edit17.Text:=inttostr(club);
+  edit18.Text:=inttostr(win);
+  edit25.Text:=inttostr(totcrdtswin); { total credits win update }
+end;
+
+procedure TformMain.Button9Click(Sender: TObject);   { clubgame }
+  var
+    x,j:integer;
+begin
+  if crdts < 20 then Button5Click(Sender);
+  if crdts < 20 then
+    begin
+      while crdts < 20 do Button4Click(Sender);
+    end;
+  j:=0;
+  while j < 20 do
+    begin
+  x := 1+random(10000);
+  if x = 10000 then
+    begin
+      crdts:=crdts-1;
+      edit16.Text:=inttostr(crdts);
+    end;
+  if x < 10000 then
+    begin
+      crdts:=crdts-1;
+      club:=club+1;
+      edit16.Text:=inttostr(crdts);
+      edit17.Text:=inttostr(club);
+    end;
+    j:=j+1;
+  end;
+
+end;
+
+procedure TformMain.Button16Click(Sender: TObject);   { 100000 clubgames }
+var
+  x: integer;
+begin
+  x:=0;
+  while x < 100000 do
+    begin
+      Button9Click(Sender);
+      delay(0,sender);
+      x:=x+1;
+    end;
+
+end;
+
+procedure TformMain.Button17Click(Sender: TObject);
+begin
+  { if ? }
+  if club > 25 then
+    begin
+      stake:=5;
+    end;
+  if club > 50 then
+    begin
+      stake:=10;
+    end;
+  if club > 100 then
+    begin
+      stake:=20;
+    end;
+  if club <= 25 then
+    begin
+      stake:=2;
+    end;
+
+  Button9Click(Sender);
+  delay(0,sender);
+  Button7Click(Sender);
+end;
+
+{ ******player bet****** }
+procedure TformMain.Button7Click(Sender: TObject);
+begin
+
+      bet:=bet+stake;
+      edit19.Text:=inttostr(bet);
+      club:=club-stake;
+      edit17.Text:=inttostr(club);
+      totcrdtspld:=totcrdtspld+stake;
+      edit24.Text:=inttostr(totcrdtspld);         { total credits played update }
+
+end;
+
+{ ******dealer bet****** }
+procedure TformMain.Button8Click(Sender: TObject);
+begin
+  bet:=bet+stake;
+  edit19.Text:=inttostr(bet);
+end;
+
+
+
+procedure TformMain.Button18Click(Sender: TObject);
+begin
+  win:=win+bet;
+  bet:=0;
+  edit19.Text:=inttostr(bet);
+  edit18.Text:=inttostr(win);
+end;
+
+
+
+procedure TformMain.Button19Click(Sender: TObject);
+begin
+  dealerwin:=dealerwin+bet;
+  bet:=0;
+  edit19.Text:=inttostr(bet);
+  edit22.Text:=inttostr(dealerwin);
+end;
+
+end.

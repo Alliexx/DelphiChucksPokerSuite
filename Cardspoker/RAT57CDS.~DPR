@@ -1,0 +1,21 @@
+program Rat57cds;
+
+(*
+ * program Rat57cds for Delphi 4 through 2005 (32-Bit Native)
+ * Copyright 2005, Charles A. Appel Jr.
+ *)
+
+uses
+  Forms,
+  Rat57mn in 'RAT57MN.PAS' {formMain},
+  caaPS5CH in 'CAAPS5CH.PAS',
+  caaPSCrd in 'caaPSCrd.pas',
+  caaPSDck in 'CAAPSDCK.PAS',
+  caa7Card in 'caa7Card.pas';
+
+{$R *.RES}
+
+begin
+  Application.CreateForm(TformMain, formMain);
+  Application.Run;
+end.
